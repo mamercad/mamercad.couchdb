@@ -1,0 +1,5 @@
+- name: restart couchdb
+  ansible.builtin.systemd:
+    name: couchdb
+    state: restarted
+  become: true

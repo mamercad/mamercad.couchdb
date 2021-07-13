@@ -1,0 +1,50 @@
+- name: install gpg key
+  ansible.builtin.apt_key:
+    url: https://couchdb.apache.org/repo/keys.asc
+    keyring: /usr/share/keyrings/couchdb-archive-keyring.gpg
+  become: true
+
+- name: install couchdb repo
+  ansible.builtin.apt_repository:
+    state: present
+    repo: deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ {{ ansible_distribution_release }} main
+  become: true
+
+- name: install couchdb
+  ansible.builtin.apt:
+    name: couchdb
+    state: present
+    update_cache: true
+  become: true
+
+- name: add admin to local.ini
+  community.general.ini_file:
+    path: /opt/couchdb/etc/local.ini
+    section: admins
+    option: admin
+    value: "{{ admin_password | default('hunter2', true) }}"
+    backup: yes
+  become: true
+  notify: restart couchdb
+
+- name: update port if required
+  community.general.ini_file:
+    path: /opt/couchdb/etc/local.ini
+    section: chttpd
+    option: port
+    value: "{{ chttpd_port | default('5984', true) }}"
+    backup: yes
+  become: true
+  notify: restart couchdb
+  when: chttpd_port is defined
+
+- name: update bind_address if required
+  community.general.ini_file:
+    path: /opt/couchdb/etc/local.ini
+    section: chttpd
+    option: bind_address
+    value: "{{ chttpd_bind_address | default('127.0.0.1', true) }}"
+    backup: yes
+  become: true
+  notify: restart couchdb
+  when: chttpd_bind_address is defined
